@@ -14,8 +14,13 @@ def lennard_jones_force(particles, distances, indices):
         neighbor_indices = indices[i]
         r = distances[i]
         
-        epsilon_ij = torch.sqrt(particles.epsilons[i] * particles.epsilons[neighbor_indices])
-        sigma_ij = 0.5 * (particles.sigmas[i] + particles.sigmas[neighbor_indices])
+        epsilon_i = particles.epsilons[i].item()
+        epsilon_j = particles.epsilons[neighbor_indices]
+        epsilon_ij = torch.sqrt(epsilon_i * epsilon_j)
+        
+        sigma_i = particles.sigmas[i].item()
+        sigma_j = particles.sigmas[neighbor_indices]
+        sigma_ij = 0.5 * (sigma_i + sigma_j)
         
         r_clipped = torch.clamp(r, min=1e-2)
         sigma_r6 = (sigma_ij / r_clipped) ** 6
@@ -23,7 +28,7 @@ def lennard_jones_force(particles, distances, indices):
         
         f_magnitude = 24.0 * epsilon_ij * (2.0 * sigma_r12 - sigma_r6) / r_clipped
         
-        pos_diff = particles.positions[i] - particles.positions[neighbor_indices]
+        pos_diff = particles.positions[i:i+1] - particles.positions[neighbor_indices]
         r_vec_norm = torch.norm(pos_diff, dim=1, keepdim=True)
         r_vec_norm = torch.clamp(r_vec_norm, min=1e-2)
         direction = pos_diff / r_vec_norm
@@ -41,13 +46,13 @@ def coulomb_force(particles, distances, indices, k_e):
         neighbor_indices = indices[i]
         r = distances[i]
         
-        q_i = particles.charges[i]
+        q_i = particles.charges[i].item()
         q_j = particles.charges[neighbor_indices]
         
         r_clipped = torch.clamp(r, min=1e-2)
         f_magnitude = k_e * q_i * q_j / (r_clipped ** 2)
         
-        pos_diff = particles.positions[i] - particles.positions[neighbor_indices]
+        pos_diff = particles.positions[i:i+1] - particles.positions[neighbor_indices]
         r_vec_norm = torch.norm(pos_diff, dim=1, keepdim=True)
         r_vec_norm = torch.clamp(r_vec_norm, min=1e-2)
         direction = pos_diff / r_vec_norm
