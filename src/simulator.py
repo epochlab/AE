@@ -1,6 +1,6 @@
 import time
 import torch
-from src.integrator import rk4_step, velocity_verlet_step, euler_step
+from src.integrator import euler_step, velocity_verlet_step
 from src.physics import apply_boundary
 from src.utils import get_element_counts
 
@@ -24,14 +24,9 @@ class Simulator:
         self.step = 0
         
         integrator_name = config['simulation']['integrator'].lower()
-        if integrator_name == 'euler':
-            self.integrate = euler_step
-        elif integrator_name == 'verlet':
-            self.integrate = velocity_verlet_step
-        else:
-            self.integrate = velocity_verlet_step
+        self.integrate = euler_step if integrator_name == 'euler' else velocity_verlet_step
+        self.integrator_name = config['simulation']['integrator']
         
-        self.timings = {'force': 0.0, 'physics': 0.0, 'render': 0.0}
         self.fps = 0.0
     
     def run(self):
@@ -44,32 +39,23 @@ class Simulator:
             
             if self.renderer and self.renderer.paused:
                 element_counts = get_element_counts(self.particles)
-                integrator_name = self.config['simulation']['integrator']
-                self.renderer.render(self.particles, self.fps, element_counts, self.timings, integrator_name)
+                self.renderer.render(self.particles, self.fps, element_counts, self.integrator_name)
                 time.sleep(0.016)
                 continue
             
-            t_phys_start = time.time()
-            
-            t_force_start = time.time()
             self.integrate(self.particles, self.dt, self.k, self.coulomb_k)
+            
             if self.particles.device == 'mps':
                 torch.mps.synchronize()
-            self.timings['force'] = (time.time() - t_force_start) * 1000
             
             apply_boundary(self.particles, self.boundary_size, self.restitution)
             
             if self.use_thermostat:
                 self.particles.apply_thermostat(self.target_temp, self.thermostat_tau, self.dt)
             
-            self.timings['physics'] = (time.time() - t_phys_start) * 1000
-            
             if self.renderer:
-                t_render_start = time.time()
                 element_counts = get_element_counts(self.particles)
-                integrator_name = self.config['simulation']['integrator']
-                self.renderer.render(self.particles, self.fps, element_counts, self.timings, integrator_name)
-                self.timings['render'] = (time.time() - t_render_start) * 1000
+                self.renderer.render(self.particles, self.fps, element_counts, self.integrator_name)
             
             self.step += 1
             frame_count += 1
@@ -81,16 +67,11 @@ class Simulator:
                 last_time = current_time
             
             if self.step % self.stats_interval == 0:
-                self._print_stats()
+                ke = self.particles.kinetic_energy().item()
+                temp = self.particles.temperature().item()
+                element_counts = get_element_counts(self.particles)
+                elem_str = ' '.join([f"{k}:{v}" for k, v in element_counts.items()])
+                print(f"Step {self.step:6d} | KE: {ke:.2e} J | T: {temp:.1f} K | {elem_str} | {self.fps:.0f} FPS")
         
         if self.renderer:
             self.renderer.cleanup()
-    
-    def _print_stats(self):
-        ke = self.particles.kinetic_energy().item()
-        temp = self.particles.temperature().item()
-        element_counts = get_element_counts(self.particles)
-        
-        elem_str = ' '.join([f"{k}:{v}" for k, v in element_counts.items()])
-        print(f"Step {self.step:6d} | KE: {ke:.2e} J | T: {temp:.1f} K | {elem_str} | "
-              f"F:{self.timings['force']:.1f}ms P:{self.timings['physics']:.1f}ms R:{self.timings['render']:.1f}ms | {self.fps:.0f} FPS")
