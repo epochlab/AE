@@ -28,7 +28,8 @@ conda activate ae
 conda create -n ae python=3.11
 conda activate ae
 conda install pytorch torchvision torchaudio -c pytorch
-conda install moderngl glfw pyrr pyyaml h5py pytest pytest-benchmark -c conda-forge
+conda install glfw pyyaml h5py pytest pytest-benchmark -c conda-forge
+pip install PyOpenGL PyOpenGL-accelerate
 ```
 
 ## Quick Start
