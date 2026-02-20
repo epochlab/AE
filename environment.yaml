@@ -1,0 +1,19 @@
+name: ae
+channels:
+  - conda-forge
+  - pytorch
+  - defaults
+
+dependencies:
+  - python=3.11
+  - numpy>=1.24
+  - pyyaml>=6.0
+  - pytorch>=2.0
+  - torchvision
+  - torchaudio
+  - moderngl>=5.8
+  - glfw>=2.6
+  - pyrr>=0.10.3
+  - pytest>=7.4
+  - pytest-benchmark>=4.0
+  - h5py>=3.8

@@ -1,0 +1,42 @@
+# AE Simulation Configuration
+
+simulation:
+  integrator: "RK4"
+  dt: 1.0e-15
+  steps: 100000
+  device: "mps"
+
+physics:
+  k_neighbors: 8
+  coulomb_constant: 8.9875517923e9
+  temperature: 300.0
+  thermostat: "berendsen"
+  thermostat_tau: 100.0e-15
+  drag_coefficient: 0.0
+
+boundary:
+  type: "box"
+  size: [100.0, 100.0, 100.0]
+  restitution: 0.95
+
+particles:
+  initial_state: "random"
+  count:
+    H: 30
+    He: 20
+    Ne: 10
+  velocity_scale: 1.0
+
+renderer:
+  enabled: true
+  fps_target: 120
+  window_size: [1920, 1080]
+  point_size: 3.0
+  color_mode: "element"
+  background: [0.05, 0.05, 0.1]
+  camera:
+    position: [50.0, 50.0, 150.0]
+    look_at: [50.0, 50.0, 50.0]
+
+output:
+  stats_interval: 100
