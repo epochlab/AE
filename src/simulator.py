@@ -53,7 +53,7 @@ class Simulator:
             
             t_force_start = time.time()
             self.integrate(self.particles, self.dt, self.k, self.coulomb_k)
-            if self.particles.device.type == 'mps':
+            if self.particles.device == 'mps':
                 torch.mps.synchronize()
             self.timings['force'] = (time.time() - t_force_start) * 1000
             
