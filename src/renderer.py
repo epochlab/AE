@@ -1,7 +1,7 @@
-import moderngl
 import glfw
 import numpy as np
-from pyrr import Matrix44
+from OpenGL.GL import *
+from OpenGL.GL.shaders import compileProgram, compileShader
 
 class Renderer:
     def __init__(self, config):
@@ -28,39 +28,66 @@ class Renderer:
         glfw.set_window_user_pointer(self.window, self)
         glfw.set_key_callback(self.window, self._key_callback)
         
-        self.ctx = moderngl.create_context()
-        self.ctx.enable(moderngl.PROGRAM_POINT_SIZE)
-        self.ctx.enable(moderngl.DEPTH_TEST)
+        glEnable(GL_PROGRAM_POINT_SIZE)
+        glEnable(GL_DEPTH_TEST)
         
-        self.prog = self.ctx.program(
-            vertex_shader='''
-                #version 330
-                in vec3 in_position;
-                in vec3 in_color;
-                uniform mat4 mvp;
-                uniform float point_size;
-                out vec3 v_color;
-                void main() {
-                    gl_Position = mvp * vec4(in_position, 1.0);
-                    gl_PointSize = point_size;
-                    v_color = in_color;
-                }
-            ''',
-            fragment_shader='''
-                #version 330
-                in vec3 v_color;
-                out vec4 f_color;
-                void main() {
-                    f_color = vec4(v_color, 1.0);
-                }
-            '''
-        )
+        vertex_src = """
+            #version 330 core
+            layout (location = 0) in vec3 in_position;
+            layout (location = 1) in vec3 in_color;
+            uniform mat4 mvp;
+            uniform float point_size;
+            out vec3 v_color;
+            void main() {
+                gl_Position = mvp * vec4(in_position, 1.0);
+                gl_PointSize = point_size;
+                v_color = in_color;
+            }
+        """
         
-        self.vbo_pos = None
-        self.vbo_col = None
-        self.vao = None
+        fragment_src = """
+            #version 330 core
+            in vec3 v_color;
+            out vec4 f_color;
+            void main() {
+                f_color = vec4(v_color, 1.0);
+            }
+        """
+        
+        vertex_shader = compileShader(vertex_src, GL_VERTEX_SHADER)
+        fragment_shader = compileShader(fragment_src, GL_FRAGMENT_SHADER)
+        
+        self.shader = glCreateProgram()
+        glAttachShader(self.shader, vertex_shader)
+        glAttachShader(self.shader, fragment_shader)
+        glLinkProgram(self.shader)
+        
+        if glGetProgramiv(self.shader, GL_LINK_STATUS) != GL_TRUE:
+            raise RuntimeError(glGetProgramInfoLog(self.shader))
+        
+        glDeleteShader(vertex_shader)
+        glDeleteShader(fragment_shader)
+        
+        self.vao = glGenVertexArrays(1)
+        self.vbo_pos = glGenBuffers(1)
+        self.vbo_col = glGenBuffers(1)
+        
+        glBindVertexArray(self.vao)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_pos)
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, None)
+        glEnableVertexAttribArray(0)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_col)
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, None)
+        glEnableVertexAttribArray(1)
+        
+        glBindVertexArray(0)
+        
         self.paused = False
         self.running = True
+        self.mvp_loc = glGetUniformLocation(self.shader, "mvp")
+        self.point_size_loc = glGetUniformLocation(self.shader, "point_size")
     
     def _key_callback(self, window, key, scancode, action, mods):
         if action == glfw.PRESS:
@@ -81,7 +108,7 @@ class Renderer:
     
     def _compute_colors(self, particles):
         if self.color_mode == "element":
-            return particles.colors
+            return particles.colors.cpu().numpy()
         elif self.color_mode == "velocity":
             v_mag = np.linalg.norm(particles.velocities.cpu().numpy(), axis=1)
             v_norm = (v_mag - v_mag.min()) / (v_mag.max() - v_mag.min() + 1e-8)
@@ -100,7 +127,39 @@ class Renderer:
             colors[q == 0] = [0.5, 0.5, 0.5]
             return colors
         else:
-            return particles.colors
+            return particles.colors.cpu().numpy()
+    
+    def _create_mvp_matrix(self):
+        cam_pos = np.array(self.config['camera']['position'], dtype=np.float32)
+        look_at = np.array(self.config['camera']['look_at'], dtype=np.float32)
+        up = np.array([0, 1, 0], dtype=np.float32)
+        
+        aspect = self.window_size[0] / self.window_size[1]
+        fov = np.radians(45.0)
+        near, far = 0.1, 500.0
+        
+        f = 1.0 / np.tan(fov / 2.0)
+        projection = np.array([
+            [f/aspect, 0, 0, 0],
+            [0, f, 0, 0],
+            [0, 0, (far+near)/(near-far), (2*far*near)/(near-far)],
+            [0, 0, -1, 0]
+        ], dtype=np.float32)
+        
+        z = cam_pos - look_at
+        z = z / np.linalg.norm(z)
+        x = np.cross(up, z)
+        x = x / np.linalg.norm(x)
+        y = np.cross(z, x)
+        
+        view = np.array([
+            [x[0], x[1], x[2], -np.dot(x, cam_pos)],
+            [y[0], y[1], y[2], -np.dot(y, cam_pos)],
+            [z[0], z[1], z[2], -np.dot(z, cam_pos)],
+            [0, 0, 0, 1]
+        ], dtype=np.float32)
+        
+        return np.dot(projection, view)
     
     def render(self, particles, fps, element_counts, timings):
         if glfw.window_should_close(self.window):
@@ -110,28 +169,24 @@ class Renderer:
         positions = particles.positions.cpu().numpy().astype('f4')
         colors = self._compute_colors(particles).astype('f4')
         
-        if self.vbo_pos is None:
-            self.vbo_pos = self.ctx.buffer(positions.tobytes())
-            self.vbo_col = self.ctx.buffer(colors.tobytes())
-            self.vao = self.ctx.vertex_array(
-                self.prog,
-                [(self.vbo_pos, '3f', 'in_position'), (self.vbo_col, '3f', 'in_color')]
-            )
-        else:
-            self.vbo_pos.write(positions.tobytes())
-            self.vbo_col.write(colors.tobytes())
+        glClearColor(self.bg[0], self.bg[1], self.bg[2], 1.0)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         
-        cam_pos = self.config['camera']['position']
-        look_at = self.config['camera']['look_at']
-        projection = Matrix44.perspective_projection(45.0, self.window_size[0] / self.window_size[1], 0.1, 500.0)
-        view = Matrix44.look_at(cam_pos, look_at, [0, 1, 0])
-        mvp = projection * view
+        glUseProgram(self.shader)
         
-        self.prog['mvp'].write(mvp.astype('f4').tobytes())
-        self.prog['point_size'].value = self.point_size
+        mvp = self._create_mvp_matrix()
+        glUniformMatrix4fv(self.mvp_loc, 1, GL_FALSE, mvp.T)
+        glUniform1f(self.point_size_loc, self.point_size)
         
-        self.ctx.clear(self.bg[0], self.bg[1], self.bg[2])
-        self.vao.render(moderngl.POINTS)
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_pos)
+        glBufferData(GL_ARRAY_BUFFER, positions.nbytes, positions, GL_DYNAMIC_DRAW)
+        
+        glBindBuffer(GL_ARRAY_BUFFER, self.vbo_col)
+        glBufferData(GL_ARRAY_BUFFER, colors.nbytes, colors, GL_DYNAMIC_DRAW)
+        
+        glBindVertexArray(self.vao)
+        glDrawArrays(GL_POINTS, 0, len(positions))
+        glBindVertexArray(0)
         
         element_str = ' '.join([f"{k}:{v}" for k, v in element_counts.items()])
         timing_str = f"F:{timings['force']:.1f}ms P:{timings['physics']:.1f}ms R:{timings['render']:.1f}ms"
@@ -142,4 +197,8 @@ class Renderer:
         glfw.poll_events()
     
     def cleanup(self):
+        glDeleteVertexArrays(1, [self.vao])
+        glDeleteBuffers(1, [self.vbo_pos])
+        glDeleteBuffers(1, [self.vbo_col])
+        glDeleteProgram(self.shader)
         glfw.terminate()

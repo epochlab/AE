@@ -18,9 +18,9 @@ def test_glfw_context():
     glfw.terminate()
     assert success or True
 
-def test_moderngl_context():
+def test_opengl_context():
     try:
-        import moderngl
+        from OpenGL.GL import glGetString, GL_VERSION
         import glfw
         
         if not glfw.init():
@@ -38,9 +38,9 @@ def test_moderngl_context():
             pytest.skip("Failed to create window")
         
         glfw.make_context_current(window)
-        ctx = moderngl.create_context()
+        version = glGetString(GL_VERSION)
         
-        assert ctx is not None
+        assert version is not None
         
         glfw.destroy_window(window)
         glfw.terminate()

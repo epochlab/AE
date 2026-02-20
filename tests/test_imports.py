@@ -10,9 +10,9 @@ def test_torch_mps():
         pytest.skip("MPS not available on this system")
     assert torch.backends.mps.is_available()
 
-def test_moderngl_import():
-    import moderngl
-    assert moderngl is not None
+def test_opengl_import():
+    from OpenGL.GL import glGetString, GL_VERSION
+    assert glGetString is not None
 
 def test_glfw_import():
     import glfw

@@ -19,7 +19,9 @@ class ParticleSystem:
         return len(self.positions)
 
     def kinetic_energy(self):
-        return 0.5 * torch.sum(self.masses[:, None] * self.velocities ** 2)
+        mass_kg = self.masses * 1.66053906660e-27
+        v_m_s = self.velocities * 1e5
+        return 0.5 * torch.sum(mass_kg[:, None] * v_m_s ** 2)
 
     def temperature(self, k_b=1.380649e-23):
         ke = self.kinetic_energy()

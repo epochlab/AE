@@ -11,9 +11,10 @@ dependencies:
   - pytorch>=2.0
   - torchvision
   - torchaudio
-  - moderngl>=5.8
   - glfw>=2.6
-  - pyrr>=0.10.3
+  - pip:
+    - PyOpenGL>=3.1.0
+    - PyOpenGL-accelerate>=3.1.0
   - pytest>=7.4
   - pytest-benchmark>=4.0
   - h5py>=3.8

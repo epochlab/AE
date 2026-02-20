@@ -41,8 +41,9 @@ def create_particles(config, device):
         pos = torch.rand(count, 3) * torch.tensor(boundary)
         
         mass_kg = element['mass'] * 1.66053906660e-27
-        v_thermal = np.sqrt(3 * k_b * temp / mass_kg)
-        vel = (torch.randn(count, 3) * v_thermal * particle_config.get('velocity_scale', 1.0))
+        v_thermal_m_s = np.sqrt(3 * k_b * temp / mass_kg)
+        v_thermal_A_fs = v_thermal_m_s * 1e-5
+        vel = (torch.randn(count, 3) * v_thermal_A_fs * particle_config.get('velocity_scale', 1.0))
         
         positions_list.append(pos)
         velocities_list.append(vel)
