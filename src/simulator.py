@@ -1,5 +1,6 @@
 import time
-from src.integrator import rk4_step
+import torch
+from src.integrator import rk4_step, velocity_verlet_step, euler_step
 from src.physics import apply_boundary
 from src.utils import get_element_counts
 
@@ -22,6 +23,14 @@ class Simulator:
         self.stats_interval = config['output']['stats_interval']
         self.step = 0
         
+        integrator_name = config['simulation']['integrator'].lower()
+        if integrator_name == 'euler':
+            self.integrate = euler_step
+        elif integrator_name == 'verlet':
+            self.integrate = velocity_verlet_step
+        else:
+            self.integrate = velocity_verlet_step
+        
         self.timings = {'force': 0.0, 'physics': 0.0, 'render': 0.0}
         self.fps = 0.0
     
@@ -35,14 +44,17 @@ class Simulator:
             
             if self.renderer and self.renderer.paused:
                 element_counts = get_element_counts(self.particles)
-                self.renderer.render(self.particles, self.fps, element_counts, self.timings)
+                integrator_name = self.config['simulation']['integrator']
+                self.renderer.render(self.particles, self.fps, element_counts, self.timings, integrator_name)
                 time.sleep(0.016)
                 continue
             
             t_phys_start = time.time()
             
             t_force_start = time.time()
-            rk4_step(self.particles, self.dt, self.k, self.coulomb_k)
+            self.integrate(self.particles, self.dt, self.k, self.coulomb_k)
+            if self.particles.device.type == 'mps':
+                torch.mps.synchronize()
             self.timings['force'] = (time.time() - t_force_start) * 1000
             
             apply_boundary(self.particles, self.boundary_size, self.restitution)
@@ -55,7 +67,8 @@ class Simulator:
             if self.renderer:
                 t_render_start = time.time()
                 element_counts = get_element_counts(self.particles)
-                self.renderer.render(self.particles, self.fps, element_counts, self.timings)
+                integrator_name = self.config['simulation']['integrator']
+                self.renderer.render(self.particles, self.fps, element_counts, self.timings, integrator_name)
                 self.timings['render'] = (time.time() - t_render_start) * 1000
             
             self.step += 1

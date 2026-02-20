@@ -161,7 +161,7 @@ class Renderer:
         
         return np.dot(projection, view)
     
-    def render(self, particles, fps, element_counts, timings):
+    def render(self, particles, fps, element_counts, timings, integrator='Euler'):
         if glfw.window_should_close(self.window):
             self.running = False
             return
@@ -190,7 +190,7 @@ class Renderer:
         
         element_str = ' '.join([f"{k}:{v}" for k, v in element_counts.items()])
         timing_str = f"F:{timings['force']:.1f}ms P:{timings['physics']:.1f}ms R:{timings['render']:.1f}ms"
-        title = f"AE | {fps:.0f} FPS | RK4 | {element_str} | {timing_str}"
+        title = f"AE | {fps:.0f} FPS | {integrator} | {element_str} | {timing_str}"
         glfw.set_window_title(self.window, title)
         
         glfw.swap_buffers(self.window)

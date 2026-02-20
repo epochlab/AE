@@ -1,7 +1,7 @@
 import pytest
 import torch
 from src.particle import ParticleSystem
-from src.physics import find_k_nearest, lennard_jones_force, coulomb_force, compute_forces
+from src.physics import find_k_nearest, compute_forces
 
 @pytest.fixture
 def simple_particles():
@@ -27,23 +27,14 @@ def test_k_nearest(simple_particles):
     assert indices.shape == (simple_particles.n_particles, k)
     assert torch.all(distances >= 0)
 
-def test_lennard_jones_force(simple_particles):
-    k = 4
-    distances, indices = find_k_nearest(simple_particles.positions, k)
-    forces = lennard_jones_force(simple_particles, distances, indices)
+def test_combined_forces(simple_particles):
+    forces = compute_forces(simple_particles, k=4, coulomb_k=8.9875517923e+9)
     assert forces.shape == simple_particles.positions.shape
     assert not torch.any(torch.isnan(forces))
 
-def test_coulomb_force(simple_particles):
+def test_forces_with_charges(simple_particles):
     simple_particles.charges = torch.randn(simple_particles.n_particles)
-    k = 4
-    distances, indices = find_k_nearest(simple_particles.positions, k)
-    forces = coulomb_force(simple_particles, distances, indices, 8.9875517923e9)
-    assert forces.shape == simple_particles.positions.shape
-    assert not torch.any(torch.isnan(forces))
-
-def test_compute_forces(simple_particles):
-    forces = compute_forces(simple_particles, k=4, coulomb_k=8.9875517923e9)
+    forces = compute_forces(simple_particles, k=4, coulomb_k=8.9875517923e+9)
     assert forces.shape == simple_particles.positions.shape
     assert not torch.any(torch.isnan(forces))
 

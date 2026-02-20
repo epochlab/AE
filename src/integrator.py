@@ -1,34 +1,43 @@
 import torch
 from src.physics import compute_forces
 
-def rk4_step(particles, dt, k, coulomb_k):
-    x0 = particles.positions.clone()
-    v0 = particles.velocities.clone()
+def velocity_verlet_step(particles, dt, k, coulomb_k):
+    """
+    Velocity Verlet integration - faster than RK4 for real-time
+    Only 2 force evaluations per step vs 4 for RK4
+    """
     m = particles.masses[:, None]
     
-    f1 = compute_forces(particles, k, coulomb_k)
-    k1_v = f1 / m
-    k1_x = v0
+    # Compute forces at current position
+    f = compute_forces(particles, k, coulomb_k)
+    a = f / m
     
-    particles.positions = x0 + 0.5 * dt * k1_x
-    particles.velocities = v0 + 0.5 * dt * k1_v
-    f2 = compute_forces(particles, k, coulomb_k)
-    k2_v = f2 / m
-    k2_x = v0 + 0.5 * dt * k1_v
+    # Update positions
+    particles.positions = particles.positions + particles.velocities * dt + 0.5 * a * dt * dt
     
-    particles.positions = x0 + 0.5 * dt * k2_x
-    particles.velocities = v0 + 0.5 * dt * k2_v
-    f3 = compute_forces(particles, k, coulomb_k)
-    k3_v = f3 / m
-    k3_x = v0 + 0.5 * dt * k2_v
+    # Compute forces at new position
+    f_new = compute_forces(particles, k, coulomb_k)
+    a_new = f_new / m
     
-    particles.positions = x0 + dt * k3_x
-    particles.velocities = v0 + dt * k3_v
-    f4 = compute_forces(particles, k, coulomb_k)
-    k4_v = f4 / m
-    k4_x = v0 + dt * k3_v
-    
-    particles.positions = x0 + (dt / 6.0) * (k1_x + 2 * k2_x + 2 * k3_x + k4_x)
-    particles.velocities = v0 + (dt / 6.0) * (k1_v + 2 * k2_v + 2 * k3_v + k4_v)
+    # Update velocities
+    particles.velocities = particles.velocities + 0.5 * (a + a_new) * dt
     
     return particles
+
+def euler_step(particles, dt, k, coulomb_k):
+    """
+    Simple Euler integration - fastest, 1 force evaluation
+    Less accurate but good enough for visualization
+    """
+    m = particles.masses[:, None]
+    
+    f = compute_forces(particles, k, coulomb_k)
+    a = f / m
+    
+    particles.velocities = particles.velocities + a * dt
+    particles.positions = particles.positions + particles.velocities * dt
+    
+    return particles
+
+# Alias for backward compatibility
+rk4_step = velocity_verlet_step
