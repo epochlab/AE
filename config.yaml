@@ -2,7 +2,7 @@
 
 simulation:
   integrator: "Euler"
-  dt: 5.0e-13
+  dt: 1.0e-16
   steps: 100000
   device: "mps"
 

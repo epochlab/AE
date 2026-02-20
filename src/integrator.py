@@ -7,7 +7,9 @@ def euler_step(particles, dt, k, coulomb_k):
     f = compute_forces(particles, k, coulomb_k)
     a_A_fs2 = (f / m_kg) * 1e-5
     
+    particles.velocities *= 0.999
     particles.velocities += a_A_fs2 * dt
+    particles.velocities = torch.clamp(particles.velocities, -1.0, 1.0)
     particles.positions += particles.velocities * dt
     
     return particles

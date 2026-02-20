@@ -48,11 +48,12 @@ def compute_forces(particles, k, coulomb_k):
 def apply_boundary(particles, boundary_size, restitution):
     boundary_tensor = torch.tensor(boundary_size, device=particles.positions.device, dtype=particles.positions.dtype)
     
-    lower = particles.positions < 0
-    upper = particles.positions > boundary_tensor
-    
-    particles.positions[lower] = 0
-    particles.velocities[lower] = -particles.velocities[lower] * restitution
-    
-    particles.positions[upper] = boundary_tensor.expand_as(particles.positions)[upper]
-    particles.velocities[upper] = -particles.velocities[upper] * restitution
+    for dim in range(3):
+        lower = particles.positions[:, dim] < 0
+        upper = particles.positions[:, dim] > boundary_tensor[dim]
+        
+        particles.positions[lower, dim] = 0
+        particles.velocities[lower, dim] *= -restitution
+        
+        particles.positions[upper, dim] = boundary_tensor[dim]
+        particles.velocities[upper, dim] *= -restitution
