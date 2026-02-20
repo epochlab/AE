@@ -8,10 +8,10 @@ simulation:
 
 physics:
   k_neighbors: 8
-  coulomb_constant: 8.9875517923e9
+  coulomb_constant: 8.9875517923e+9
   temperature: 300.0
   thermostat: "berendsen"
-  thermostat_tau: 100.0e-15
+  thermostat_tau: 1.0e-13
   drag_coefficient: 0.0
 
 boundary:
