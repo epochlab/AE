@@ -85,16 +85,10 @@ class Renderer:
                 self.running = False
             elif key == glfw.KEY_SPACE:
                 self.paused = not self.paused
-            elif key == glfw.KEY_1:
-                self.color_mode = "element"
-            elif key == glfw.KEY_2:
-                self.color_mode = "velocity"
-            elif key == glfw.KEY_3:
-                self.color_mode = "acceleration"
-            elif key == glfw.KEY_4:
-                self.color_mode = "mass"
-            elif key == glfw.KEY_5:
-                self.color_mode = "charge"
+            elif key == glfw.KEY_C:
+                modes = ["charge", "mass", "velocity", "element"]
+                idx = modes.index(self.color_mode) if self.color_mode in modes else 0
+                self.color_mode = modes[(idx + 1) % len(modes)]
     
     def _compute_colors(self, particles):
         if self.color_mode == "element":

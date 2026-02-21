@@ -3,8 +3,8 @@
 # Units: mass (amu), radius (Angstroms), lj_epsilon (kcal/mol), lj_sigma (Angstroms)
 
 elements:
-  H:  {mass: 1.008, radius: 1.20, color: [1.000, 1.000, 1.000], lj_epsilon: 0.0157, lj_sigma: 2.81}
-  He: {mass: 4.003, radius: 1.40, color: [0.851, 1.000, 1.000], lj_epsilon: 0.0207, lj_sigma: 2.56}
+  H:  {mass: 1.008, radius: 1.20, color: [1.000, 1.000, 1.000], lj_epsilon: 0.0157, lj_sigma: 2.81, charge: 1.0}
+  He: {mass: 4.003, radius: 1.40, color: [0.851, 1.000, 1.000], lj_epsilon: 0.0207, lj_sigma: 2.56, charge: 0.0}
   Li: {mass: 6.941, radius: 1.82, color: [0.800, 0.502, 1.000], lj_epsilon: 0.0250, lj_sigma: 2.45}
   Be: {mass: 9.012, radius: 1.53, color: [0.761, 1.000, 0.000], lj_epsilon: 0.0850, lj_sigma: 2.75}
   B:  {mass: 10.81, radius: 1.92, color: [1.000, 0.710, 0.710], lj_epsilon: 0.0950, lj_sigma: 3.64}
@@ -12,7 +12,7 @@ elements:
   N:  {mass: 14.01, radius: 1.55, color: [0.050, 0.050, 1.000], lj_epsilon: 0.0690, lj_sigma: 3.26}
   O:  {mass: 16.00, radius: 1.52, color: [1.000, 0.050, 0.050], lj_epsilon: 0.0600, lj_sigma: 3.12}
   F:  {mass: 19.00, radius: 1.47, color: [0.565, 0.878, 0.314], lj_epsilon: 0.0500, lj_sigma: 2.95}
-  Ne: {mass: 20.18, radius: 1.54, color: [0.702, 0.890, 0.961], lj_epsilon: 0.0420, lj_sigma: 2.78}
+  Ne: {mass: 20.18, radius: 1.54, color: [0.702, 0.890, 0.961], lj_epsilon: 0.0420, lj_sigma: 2.78, charge: 0.0}
   Na: {mass: 22.99, radius: 2.27, color: [0.671, 0.361, 0.949], lj_epsilon: 0.0300, lj_sigma: 2.66}
   Mg: {mass: 24.31, radius: 1.73, color: [0.541, 1.000, 0.000], lj_epsilon: 0.1100, lj_sigma: 2.69}
   Al: {mass: 26.98, radius: 1.84, color: [0.749, 0.651, 0.651], lj_epsilon: 0.5050, lj_sigma: 4.01}

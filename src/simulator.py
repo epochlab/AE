@@ -20,7 +20,6 @@ class Simulator:
         self.target_temp = config['physics']['temperature']
         self.thermostat_tau = config['physics']['thermostat_tau']
         
-        self.stats_interval = config['output']['stats_interval']
         self.step = 0
         
         integrator_name = config['simulation']['integrator'].lower()
@@ -61,17 +60,10 @@ class Simulator:
             frame_count += 1
             
             current_time = time.time()
-            if current_time - last_time >= 1.0:
+            if current_time - last_time >= 0.1:
                 self.fps = frame_count / (current_time - last_time)
                 frame_count = 0
                 last_time = current_time
-            
-            if self.step % self.stats_interval == 0:
-                ke = self.particles.kinetic_energy().item()
-                temp = self.particles.temperature().item()
-                element_counts = get_element_counts(self.particles)
-                elem_str = ' '.join([f"{k}:{v}" for k, v in element_counts.items()])
-                print(f"Step {self.step:6d} | KE: {ke:.2e} J | T: {temp:.1f} K | {elem_str} | {self.fps:.0f} FPS")
         
         if self.renderer:
             self.renderer.cleanup()

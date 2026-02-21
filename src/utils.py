@@ -38,7 +38,7 @@ def create_particles(config, device):
     for symbol, count in counts.items():
         element = elements_data[symbol]
         
-        pos = torch.rand(count, 3) * torch.tensor(boundary)
+        pos = torch.rand(count, 3) * 50.0 + 25.0
         
         mass_kg = element['mass'] * 1.66053906660e-27
         v_thermal_m_s = np.sqrt(3 * k_b * temp / mass_kg)
