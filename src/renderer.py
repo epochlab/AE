@@ -119,11 +119,12 @@ class Renderer:
         
         aspect = self.window_size[0] / self.window_size[1]
         f = 1.0 / np.tan(np.radians(45.0) / 2.0)
+        near, far = 10.0, 300.0
         
         projection = np.array([
             [f/aspect, 0, 0, 0],
             [0, f, 0, 0],
-            [0, 0, -1.002002, -0.2002002],
+            [0, 0, -(far+near)/(far-near), -(2*far*near)/(far-near)],
             [0, 0, -1, 0]
         ], dtype=np.float32)
         

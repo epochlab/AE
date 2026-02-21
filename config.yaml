@@ -15,8 +15,8 @@ physics:
 
 boundary:
   type: "box"
-  size: [100.0, 100.0, 100.0]
-  restitution: 0.95
+  size: [75.0, 75.0, 75.0]
+  restitution: 1.0
 
 particles:
   initial_state: "random"
